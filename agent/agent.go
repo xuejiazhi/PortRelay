@@ -32,13 +32,15 @@ func main() {
 
 	i := 0
 	for {
-
-		buf := make([]byte, 512)
+		// 接收数据
+		buf := make([]byte, 1024)
 		cnt, err := conn.Read(buf)
 		if err != nil {
 			fmt.Printf("read buf error")
 			return
 		}
+
+		//
 
 		conn.Write([]byte(`
 		<<begin>>{

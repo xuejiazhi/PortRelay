@@ -34,12 +34,18 @@ type SetAddrData struct {
 	LocalIP   string // 转发本地地址
 }
 
+type LoginData struct {
+	AppId     string
+	AppSecret string
+}
+
 var (
 	// 服务器
 	ServerList        = make(map[string]*net.TCPConn)
 	DefaultBufferSize = 1024 // 默认缓冲区大小
 
-	//
+	//	类型
+	LoginType   = "login"
 	SetAddrType = "set_addr"
 )
 
@@ -62,4 +68,17 @@ type Server struct {
 	IPAddr string       // 地址
 	Port   int          // 端口
 	conn   *net.TCPConn // 连接
+}
+
+var ConfigData Config
+
+type Config struct {
+	Service Service `ini:"server"`
+}
+
+type Service struct {
+	Name     string
+	IP       string
+	HttpPort int
+	TcpPort  int
 }
