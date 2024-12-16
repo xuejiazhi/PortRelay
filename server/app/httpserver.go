@@ -2,14 +2,16 @@ package app
 
 import (
 	"PortRelay/util"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func InitHttpServer() {
-	//将应用切换到“发布模式”以提升性能
+	//设置gin模式
 	gin.SetMode(gin.ReleaseMode)
 	//创建路由
 	r := gin.Default()
@@ -17,6 +19,10 @@ func InitHttpServer() {
 		switch c.Request.Method {
 		case http.MethodGet: //GET请求
 			DoGet(c)
+		case http.MethodPost: //POST请求
+			DoPost()
+		case http.MethodDelete: //DELETE请求
+			DoDelete()
 		}
 	})
 
@@ -27,27 +33,64 @@ func InitHttpServer() {
 }
 
 func DoGet(c *gin.Context) {
-	//
-	host := c.Request.Host
-	url := c.Request.RequestURI
-	fmt.Println("this is Get Method:", url)
-	retData := make(map[string]interface{})
-	retData["host"] = host
-	retData["method"] = http.MethodGet
-	if len(c.Request.Header) > 0 {
-		for k, v := range c.Request.Header {
-			fmt.Println(k, v)
+	// set retData
+	retData := map[string]interface{}{
+		"type": "http",
+		"uuid": util.If(ConfigData.Server.Active == "dev", "1234567890", util.RandomUUID()),
+		"object": map[string]interface{}{
+			"host":   c.Request.Host,
+			"url":    c.Request.RequestURI,
+			"method": http.MethodGet,
+			"header": c.Request.Header,
+		},
+	}
+
+	// 处理请求
+	jsonStr, err := json.Marshal(retData)
+	if _, ok := ServerList[util.Md5(c.Request.Host)]; ok && err == nil {
+		ServerList[util.Md5(c.Request.Host)].Write(jsonStr)
+	} else {
+		c.JSON(http.StatusOK, map[string]interface{}{
+			"code": 404,
+			"msg":  "not found",
+		})
+	}
+
+	// 读取数据
+	select {
+	case clientData := <-ResponseChan[util.Md5(c.Request.Host)][retData["uuid"].(string)]:
+		{
+			fmt.Println(clientData)
+			c.JSON(http.StatusOK, clientData)
+		}
+	case <-time.After(15 * time.Second):
+		{
+			fmt.Println("timeout")
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"code": 500,
+				"msg":  "timeout",
+			})
 		}
 	}
-	c1 := ServerList
-	fmt.Print(c1)
-	if _, ok := ServerList[util.Md5(host)]; ok {
-
-		ServerList[util.Md5(host)].Write(util.ZeroCopyByte("hello world"))
-	}
-	c.JSON(http.StatusOK, gin.H{"user": "123", "secret": "456"})
 }
 
 func DoPost() {
+	//todo
 	fmt.Println("this is Post Method")
+}
+
+func DoDelete() {
+	//todo
+}
+
+func DoPut() {
+	//todo
+}
+
+func DoPatch() {
+	//todo
+}
+
+func DoOption() {
+	//todo
 }

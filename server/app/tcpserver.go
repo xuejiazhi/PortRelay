@@ -9,7 +9,7 @@ import (
 
 func (s *Server) Start() {
 	// 解析地址
-	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", s.IPAddr, s.Port))
+	addr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", s.IP, s.TcpPort))
 	if err != nil {
 		log.Printf("Address parsing failed: %v", err)
 		return
@@ -36,43 +36,57 @@ func (s *Server) Start() {
 			return
 		}
 		// 保存连接
-		s.conn = conn
+		s.Conn = conn
 		//读取数据
-		go s.Read(conn)
+		go s.Read()
 	}
 }
 
 func (s *Server) Stop() {
-	if s.conn == nil {
+	// 关闭连接加锁
+	RspLock.Lock()
+	defer RspLock.Unlock()
+
+	// 从服务器列表中删除
+	delete(ServerList, s.Key)
+	delete(ResponseChan, s.Key)
+
+	// 关闭连接
+	if s.Conn == nil {
 		return
 	}
-	s.conn.Close()
+	s.Conn.Close()
 }
 
-func (s *Server) Read(conn *net.TCPConn) {
+func (s *Server) Read() {
 	// 读取数据
 	buffer := make([]byte, DefaultBufferSize)
-	cnt, err := conn.Read(buffer)
-	// 读取失败
-	if err != nil {
-		log.Printf("Read failed: %v", err)
-		return
+	for {
+		cnt, err := s.Conn.Read(buffer)
+		// 读取失败
+		if err != nil {
+			log.Printf("Read failed: %v", err)
+			return
+		}
+		// 路由 (todo: 优化使用协程池)
+		go s.Router(buffer[:cnt])
 	}
-
-	// 打印数据
-	clientData := ClientData{}
-	// 解析数据
-	json.Unmarshal(buffer[:cnt], &clientData)
-	// 路由
-	s.Router(clientData)
 }
 
 // 路由
-func (s *Server) Router(clientData ClientData) {
+func (s *Server) Router(buffer []byte) {
+	// 打印数据
+	clientData := ClientData{}
+	// 解析数据
+	json.Unmarshal(buffer, &clientData)
 	// 路由
 	switch clientData.Type {
 	case SetAddrType:
-		s.SetAddr(clientData)
+		s.SetAddr(&clientData)
+	case LoginType:
+		s.Login(&clientData)
+	default:
+		fmt.Println("unknown type", string(buffer))
 	}
 }
 
