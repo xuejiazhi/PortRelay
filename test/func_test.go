@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -50,4 +51,37 @@ func TestXxx(t *testing.T) {
 	clientData := ClientData{}
 	json.Unmarshal([]byte(str), &clientData)
 	fmt.Println(clientData)
+}
+
+func Test_Xxx(t *testing.T) {
+	// 假设有一个字符串
+	str := `<<begin>>
+		{
+			"code":200,
+			"msg":"ok",
+			"time":"2022-01-01 12:00:00"
+		}<<end>><<begin>>
+		{
+			"code":200,
+			"msg":"ok",
+			"time":"2022-01-01 12:00:00"
+		}<<end>><<begin>>
+		{
+			"code":200,
+			"msg":"ok",
+			"time":"2022-01-01 12:00:00"
+		}<<end>>`
+
+	// 找到 [[begin]] 和 [[end]] 的位置
+	beginIndex := strings.Index(str, "<<begin>>")
+	endIndex := strings.Index(str, "<<end>>")
+
+	// 如果找到了 [[begin]] 和 [[end]]
+	if beginIndex != -1 && endIndex != -1 {
+		// 提取中间的值
+		middleValue := str[beginIndex+len("[[begin]]") : endIndex]
+		fmt.Println("Middle Value:", middleValue)
+	} else {
+		fmt.Println("Begin or end marker not found")
+	}
 }

@@ -1,14 +1,23 @@
 package main
 
 import (
+	"PortRelay/agent/app"
+	"PortRelay/util"
 	"fmt"
 	"net"
 	"time"
 )
 
 func main() {
-	fmt.Println("client start...")
+	// 监听信号
+	go util.SignalNotify()
 
+	// 启动
+	app.Run()
+}
+
+func Test() {
+	fmt.Println("client start...")
 	time.Sleep(1 * time.Second)
 
 	conn, err := net.Dial("tcp", "127.0.0.1:8080")

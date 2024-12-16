@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -39,4 +40,12 @@ func GetRemoteUrl(urlStr string) string {
 	// 获取域名
 	domain := u.Hostname() + ":" + u.Port()
 	return domain
+}
+
+func GetIndexStr(str string) string {
+	// 找到 [[begin]] 和 [[end]] 的位置
+	beginIndex := strings.Index(str, "<<begin>>")
+	endIndex := strings.Index(str, "<<end>>")
+	middleValue := str[beginIndex+len("[[begin]]") : endIndex]
+	return middleValue
 }
