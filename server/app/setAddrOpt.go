@@ -1,8 +1,10 @@
 package app
 
-import "PortRelay/util"
+import (
+	"PortRelay/util"
+	"log"
+)
 
-//
 func (s *Server) SetAddr(clientData *ClientData) {
 	backDataMap := make(map[string]interface{})
 	backDataMap["type"] = "set_addr_back"
@@ -34,4 +36,16 @@ func (s *Server) SetAddr(clientData *ClientData) {
 	s.Key = util.Md5(url)
 	ServerList[s.Key] = s.Conn
 	ResponseChan[s.Key] = make(map[string]chan []byte, 10000)
+
+	//success
+	backDataMap["data"] = map[string]interface{}{
+		"errCode": 200,
+		"errMsg":  "success",
+	}
+
+	//回写
+	callbackStr, _ := util.Map2Json(backDataMap)
+	log.Println("Set Address Sucess Callback:", callbackStr)
+	s.Conn.Write(util.ZeroCopyByte(callbackStr))
+
 }

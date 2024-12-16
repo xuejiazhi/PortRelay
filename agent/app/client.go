@@ -30,13 +30,13 @@ func (c Client) Dial() {
 	log.Println("-> connect server success...")
 	// 保存连接
 	c.Conn = conn
-
 	// 设置超时时间
 	c.Conn.SetDeadline(time.Now().Add(60 * 60 * time.Second))
 	// 设置读超时时间
 	c.Conn.SetReadDeadline(time.Now().Add(15 * time.Second))
 	// 设置写超时时间
-	c.Conn.SetWriteDeadline(time.Now().Add(15 * time.Second))
+	// c.Conn.SetWriteDeadline(time.Now().Add(15 * time.Second))
+
 	//step1  登录
 	log.Println("begin login server...")
 	if err := c.Login(); err != nil {
@@ -51,6 +51,9 @@ func (c Client) Dial() {
 		return
 	}
 	log.Println("-> Set Address success!")
+
+	go c.Read()
+	select {}
 }
 
 // 登录
@@ -158,4 +161,29 @@ func (c Client) SetAddr() error {
 		//
 		return errors.New("set addr is fail")
 	}
+}
+
+// Read 数据
+func (c Client) Read() {
+	fmt.Print(`
+********************************************************
+*    			开始使用HTTP隧道工具           *
+********************************************************
+`)
+	c.Conn.SetReadDeadline(time.Now().Add(60 * 60 * time.Second))
+	for {
+		// 接收数据
+		buf := make([]byte, 2048)
+		cnt, err := c.Conn.Read(buf)
+		if err != nil {
+			fmt.Printf("read buf error %v", err)
+			continue
+		}
+		//
+		go c.Marshal(buf[:cnt])
+	}
+}
+
+func (c Client) Marshal(buffer []byte) {
+
 }
