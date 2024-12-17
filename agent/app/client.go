@@ -176,14 +176,43 @@ func (c Client) Read() {
 		buf := make([]byte, 2048)
 		cnt, err := c.Conn.Read(buf)
 		if err != nil {
-			fmt.Printf("read buf error %v", err)
-			continue
+			// 连接断开
+			log.Printf("read buf error %v \n ", err)
+			log.Println("-> reconnect server...")
+			// 重新连接服务器
+			address := fmt.Sprintf("%s:%d", ConfigData.Agent.Serverip, ConfigData.Agent.Serverport)
+			// 建立连接
+			for {
+				c.Conn, err = net.Dial(ConfigData.Agent.Network, address)
+				if err != nil {
+					log.Printf("reconnect server err,error %v\n", err)
+					time.Sleep(5 * time.Second)
+					continue
+				} else {
+					// 登录
+					if err := c.Login(); err != nil {
+						log.Printf("login fail! error %v\n", err)
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					// 设置地址
+					if err = c.SetAddr(); err != nil {
+						log.Printf("Set Address fail! error %v\n", err)
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					// 连接成功
+					break
+				}
+			}
+
 		}
-		//
+
+		// 处理数据
 		go c.Marshal(buf[:cnt])
 	}
 }
 
 func (c Client) Marshal(buffer []byte) {
-
+	log.Println("Recv Msg:", string(buffer))
 }
