@@ -17,7 +17,7 @@ type HttpOpt struct {
 	Header map[string][]string `json:"header"`
 }
 
-func (h *HttpOpt) Analysis() (interface{}, error) {
+func (h *HttpOpt) Analysis() (interface{}, map[string][]string, error) {
 	if h.Object != nil {
 		// 解析数据
 		objectMap := cast.ToStringMap(h.Object)
@@ -52,10 +52,10 @@ func (h *HttpOpt) Analysis() (interface{}, error) {
 	}
 
 	// 错误
-	return nil, errors.New("http method is not support")
+	return nil, nil, errors.New("http method is not support")
 }
 
-func (h *HttpOpt) Get() (interface{}, error) {
+func (h *HttpOpt) Get() (interface{}, map[string][]string, error) {
 	// 拼接url
 	u := HostRouterList[util.Md5(h.Host)]
 	// 拼接url

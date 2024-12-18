@@ -62,13 +62,31 @@ func DoGet(c *gin.Context) {
 	}
 
 	// 定义临时通道
-	ResponseChan[key][retData.UUID.(string)] = make(chan []byte)
+	ResponseChan[key][retData.UUID.(string)] = make(chan interface{})
 	// 读取数据
 	select {
 	case clientData := <-ResponseChan[key][retData.UUID.(string)]:
 		{
+			//删除临时通道
 			delete(ResponseChan[key], retData.UUID.(string))
-			c.JSON(http.StatusOK, cast.ToStringMap(string(clientData)))
+			cliMapData := cast.ToStringMap(clientData)
+			if header, ok := cliMapData["header"]; ok {
+				headerMap := cast.ToStringMap(header)
+				for k, v := range headerMap {
+					headValue := cast.ToStringSlice(v)
+					if len(headValue) > 0 {
+						c.Header(k, headValue[0])
+					}
+				}
+			}
+
+			// 存在body
+			if body, ok := cliMapData["body"]; ok {
+				c.String(http.StatusOK, cast.ToString(body))
+			} else {
+				//转发失败的情况
+				c.String(http.StatusOK, "Port Forwarding failed!")
+			}
 		}
 	case <-time.After(15 * time.Second):
 		{

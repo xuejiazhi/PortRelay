@@ -28,8 +28,6 @@ func (c Client) Dial() {
 		log.Printf("Agent start err,exit! error %v\n", err)
 		return
 	}
-	// 连接成功
-	log.Printf("-> connect server {%s} success...", address)
 
 	// 保存连接
 	c.Conn = conn
@@ -111,7 +109,6 @@ func (c Client) Login() error {
 
 // 设置地址
 func (c Client) SetAddr() error {
-	// 注册
 	log.Printf("Start registering with remote service,Name %v", ConfigData.Mapping.Name)
 	// set Address Data
 	setAddrData := variable.ClientData{
@@ -152,7 +149,6 @@ func (c Client) SetAddr() error {
 	}
 
 	//获取data
-<<<<<<< Updated upstream
 	data := cast.ToStringMap(buff["data"])
 	errCode, ok := data["errCode"].(float64)
 	if ok && errCode == 200 {
@@ -161,25 +157,12 @@ func (c Client) SetAddr() error {
 		HostRouterList[key] = HttpRouter{
 			Host: ConfigData.Mapping.LocalIP,
 			Port: ConfigData.Mapping.LocalPort,
-=======
-	data, ok := buff["data"].(map[string]interface{})
-	if ok {
-		errCode, ok := data["errCode"].(float64)
-		if ok && errCode == 200 {
-			return nil
-		} else {
-			return fmt.Errorf("set addr is fail,errCode is %v", errCode)
->>>>>>> Stashed changes
 		}
 		// 成功
 		return nil
 	} else {
-<<<<<<< Updated upstream
 		//
 		return fmt.Errorf("set addr is fail,errCode is %v", errCode)
-=======
-		return errors.New("set addr is fail")
->>>>>>> Stashed changes
 	}
 }
 
@@ -202,54 +185,26 @@ func (c Client) Read() {
 		if err != nil {
 			// 连接断开
 			log.Printf("read buf error %v \n ", err)
-<<<<<<< Updated upstream
 			log.Println("-> reconnect server...")
 
-=======
-			log.Println("---> reconnect server...")
->>>>>>> Stashed changes
 			// 重新连接服务器
 			address := fmt.Sprintf("%s:%d", ConfigData.Agent.Serverip, ConfigData.Agent.Serverport)
 			for {
 				// 建立连接
-<<<<<<< Updated upstream
 				if c.Conn, err = net.Dial(ConfigData.Agent.Network, address); err != nil {
-=======
-				c.Conn, err = net.Dial(ConfigData.Agent.Network, address)
-				if err != nil {
->>>>>>> Stashed changes
 					log.Printf("reconnect server err,error %v\n", err)
 					time.Sleep(3 * time.Second)
 					continue
 				}
-<<<<<<< Updated upstream
 				log.Println("-> reconnect server success...")
-=======
->>>>>>> Stashed changes
 
 				// 登录
 				if err := c.Login(); err != nil {
 					log.Printf("login fail! error %v\n", err)
-<<<<<<< Updated upstream
 					time.Sleep(3 * time.Second)
 					continue
 				}
 				log.Println("-> login success!")
-=======
-					time.Sleep(5 * time.Second)
-					continue
-				}
-
-				// 设置地址
-				if err = c.SetAddr(); err != nil {
-					log.Printf("Set Address fail! error %v\n", err)
-					time.Sleep(5 * time.Second)
-					continue
-				}
-				// 连接成功
-				break
-			}
->>>>>>> Stashed changes
 
 				// 设置地址
 				if err = c.SetAddr(); err != nil {
@@ -288,7 +243,7 @@ func (c Client) Marshal(buffer []byte) {
 	pro := ProtoTransfer(bufData.Proto, bufData.Object)
 	if pro != nil {
 		// 解析数据
-		rspBody, err := pro.Analysis()
+		rspBody, rspHeader, err := pro.Analysis()
 		if err != nil {
 			log.Println("Analysis error:", err)
 		} else {
@@ -296,7 +251,10 @@ func (c Client) Marshal(buffer []byte) {
 			callback := variable.ClientData{
 				Type: variable.CallBackType,
 				Data: variable.ProtoParam{
-					Object: rspBody,
+					Object: map[string]interface{}{
+						"header": rspHeader,
+						"body":   rspBody,
+					},
 					ProtoCommParam: variable.ProtoCommParam{
 						Proto: bufData.Proto,
 						UUID:  bufData.UUID,
@@ -306,6 +264,7 @@ func (c Client) Marshal(buffer []byte) {
 
 			// 转换为json
 			if callbackData, err := json.Marshal(callback); err == nil {
+				fmt.Println("CallBack String=>", string(callbackData))
 				// 发送数据
 				c.Conn.Write(callbackData)
 			}

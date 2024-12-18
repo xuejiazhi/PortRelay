@@ -51,8 +51,8 @@ var (
 	ServerList        = make(map[string]*net.TCPConn)
 	DefaultBufferSize = 1024 // 默认缓冲区大小
 
-	RspLock      sync.Mutex                                      // 锁
-	ResponseChan = make(map[string]map[string]chan []byte, 1000) // 响应通道 string key and uuid
+	RspLock      sync.Mutex                                           // 锁
+	ResponseChan = make(map[string]map[string]chan interface{}, 1000) // 响应通道 string key and uuid
 )
 
 func NewServer() *Server {
