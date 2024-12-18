@@ -2,12 +2,14 @@ package app
 
 import (
 	"PortRelay/util"
+	"PortRelay/variable"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 )
 
 func InitHttpServer() {
@@ -34,21 +36,24 @@ func InitHttpServer() {
 
 func DoGet(c *gin.Context) {
 	// set retData
-	retData := map[string]interface{}{
-		"type": "http",
-		"uuid": util.If(ConfigData.Server.Active == "dev", "1234567890", util.RandomUUID()),
-		"object": map[string]interface{}{
-			"host":   c.Request.Host,
-			"url":    c.Request.RequestURI,
-			"method": http.MethodGet,
-			"header": c.Request.Header,
+	retData := variable.ProtoHttpParam{
+		ProtoCommParam: variable.ProtoCommParam{
+			Proto: "http",
+			UUID:  util.If(ConfigData.Server.Active == "dev", "1234567890", util.RandomUUID()),
+		},
+		Object: variable.HttpObjectParam{
+			Host:   c.Request.Host,
+			URL:    c.Request.RequestURI,
+			Method: http.MethodGet,
+			Header: c.Request.Header,
 		},
 	}
 
 	// 处理请求
+	key := util.Md5(c.Request.Host)
 	jsonStr, err := json.Marshal(retData)
-	if _, ok := ServerList[util.Md5(c.Request.Host)]; ok && err == nil {
-		ServerList[util.Md5(c.Request.Host)].Write(jsonStr)
+	if _, ok := ServerList[key]; ok && err == nil {
+		ServerList[key].Write(jsonStr)
 	} else {
 		c.JSON(http.StatusOK, map[string]interface{}{
 			"code": 404,
@@ -56,12 +61,15 @@ func DoGet(c *gin.Context) {
 		})
 	}
 
+	//
+	ResponseChan[key] = make(map[string]chan []byte)
+	ResponseChan[key][retData.UUID.(string)] = make(chan []byte)
 	// 读取数据
 	select {
-	case clientData := <-ResponseChan[util.Md5(c.Request.Host)][retData["uuid"].(string)]:
+	// case clientData := <-ResponseChan[key]["retData.UUID.(string)"]:
+	case clientData := <-ResponseChan[key][retData.UUID.(string)]:
 		{
-			fmt.Println(clientData)
-			c.JSON(http.StatusOK, clientData)
+			c.JSON(http.StatusOK, cast.ToStringMap(string(clientData)))
 		}
 	case <-time.After(15 * time.Second):
 		{

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -121,4 +122,20 @@ func Recover() {
 	if r := recover(); r != nil {
 		log.Println("Recovered from panic in goroutine:", r)
 	}
+}
+
+// MapToStruct converts a map to a struct.
+func MapToStruct(m map[string]interface{}, s interface{}) error {
+	v := reflect.ValueOf(s).Elem()
+	for k, val := range m {
+		field := v.FieldByName(k)
+		if !field.IsValid() {
+			return fmt.Errorf("no such field: %s", k)
+		}
+		if !field.CanSet() {
+			return fmt.Errorf("cannot set field %s", k)
+		}
+		field.Set(reflect.ValueOf(val))
+	}
+	return nil
 }

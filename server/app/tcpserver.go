@@ -1,6 +1,7 @@
 package app
 
 import (
+	"PortRelay/variable"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -49,7 +50,7 @@ func (s *Server) Stop() {
 
 	// 从服务器列表中删除
 	delete(ServerList, s.Key)
-	delete(ResponseChan, s.Key)
+	// delete(ResponseChan, s.Key)
 
 	// 关闭连接
 	if s.Conn == nil {
@@ -76,15 +77,17 @@ func (s *Server) Read() {
 // 路由
 func (s *Server) Router(buffer []byte) {
 	// 打印数据
-	clientData := ClientData{}
+	clientData := variable.ClientData{}
 	// 解析数据
 	json.Unmarshal(buffer, &clientData)
 	// 路由
 	switch clientData.Type {
-	case SetAddrType:
+	case variable.SetAddrType:
 		s.SetAddr(&clientData)
-	case LoginType:
+	case variable.LoginType:
 		s.Login(&clientData)
+	case variable.CallBackType:
+		s.Callback(&clientData)
 	default:
 		fmt.Println("unknown type", string(buffer))
 	}

@@ -2,12 +2,15 @@ package app
 
 import (
 	"PortRelay/util"
+	"PortRelay/variable"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net"
 	"time"
+
+	"github.com/spf13/cast"
 )
 
 type Client struct {
@@ -17,30 +20,27 @@ type Client struct {
 func (c Client) Dial() {
 	// 加载配置文件
 	log.Println("Agent will be Start...")
+
 	// 建立连接
 	address := fmt.Sprintf("%s:%d", ConfigData.Agent.Serverip, ConfigData.Agent.Serverport)
-	log.Printf("Begin to connect to server %s\n", address)
 	conn, err := net.Dial(ConfigData.Agent.Network, address)
 	if err != nil {
 		log.Printf("Agent start err,exit! error %v\n", err)
 		return
 	}
-
 	// 连接成功
-	log.Println("-> connect server success...")
+	log.Printf("-> connect server {%s} success...", address)
+
 	// 保存连接
 	c.Conn = conn
 	// 设置超时时间
 	c.Conn.SetDeadline(time.Now().Add(60 * 60 * time.Second))
 	// 设置读超时时间
 	c.Conn.SetReadDeadline(time.Now().Add(15 * time.Second))
-	// 设置写超时时间
-	// c.Conn.SetWriteDeadline(time.Now().Add(15 * time.Second))
 
 	//step1  登录
-	log.Println("begin login server...")
 	if err := c.Login(); err != nil {
-		fmt.Printf("login fail! error %v\n", err)
+		fmt.Printf("-> login fail! error %v\n", err)
 		return
 	}
 	log.Println("-> login success!")
@@ -52,7 +52,9 @@ func (c Client) Dial() {
 	}
 	log.Println("-> Set Address success!")
 
+	// 读取数据
 	go c.Read()
+	// 阻塞
 	select {}
 }
 
@@ -60,7 +62,7 @@ func (c Client) Dial() {
 func (c Client) Login() error {
 	// 登录
 	loginData := map[string]interface{}{
-		"type": "login",
+		"type": variable.LoginType,
 		"data": map[string]interface{}{
 			"secret": ConfigData.Agent.Secret,
 		},
@@ -126,6 +128,7 @@ func (c Client) SetAddr() error {
 		return err
 	}
 
+	//	发送数据
 	c.Conn.Write(jsonByte)
 
 	// 读取数据
@@ -148,71 +151,122 @@ func (c Client) SetAddr() error {
 	}
 
 	//获取data
-	data, ok := buff["data"].(map[string]interface{})
-	if ok {
-		errCode, ok := data["errCode"].(float64)
-		if ok && errCode == 200 {
-			return nil
-		} else {
-			//
-			return fmt.Errorf("set addr is fail,errCode is %v", errCode)
+	data := cast.ToStringMap(buff["data"])
+	errCode, ok := data["errCode"].(float64)
+	if ok && errCode == 200 {
+		// 设置路由列表
+		key := util.Md5(util.GetRemoteUrl(ConfigData.Mapping.RemoteURL))
+		HostRouterList[key] = HttpRouter{
+			Host: ConfigData.Mapping.LocalIP,
+			Port: ConfigData.Mapping.LocalPort,
 		}
+		// 成功
+		return nil
 	} else {
 		//
-		return errors.New("set addr is fail")
+		return fmt.Errorf("set addr is fail,errCode is %v", errCode)
 	}
 }
 
 // Read 数据
 func (c Client) Read() {
+	// 打印
 	fmt.Print(`
 ********************************************************
 *    			开始使用HTTP隧道工具           *
 ********************************************************
 `)
+	// 设置读取超时时间
 	c.Conn.SetReadDeadline(time.Now().Add(60 * 60 * time.Second))
 	for {
 		// 接收数据
 		buf := make([]byte, 2048)
 		cnt, err := c.Conn.Read(buf)
+		// 处理错误 重连
+
 		if err != nil {
 			// 连接断开
 			log.Printf("read buf error %v \n ", err)
 			log.Println("-> reconnect server...")
+
 			// 重新连接服务器
 			address := fmt.Sprintf("%s:%d", ConfigData.Agent.Serverip, ConfigData.Agent.Serverport)
-			// 建立连接
 			for {
-				c.Conn, err = net.Dial(ConfigData.Agent.Network, address)
-				if err != nil {
+				// 建立连接
+				if c.Conn, err = net.Dial(ConfigData.Agent.Network, address); err != nil {
 					log.Printf("reconnect server err,error %v\n", err)
-					time.Sleep(5 * time.Second)
+					time.Sleep(3 * time.Second)
 					continue
-				} else {
-					// 登录
-					if err := c.Login(); err != nil {
-						log.Printf("login fail! error %v\n", err)
-						time.Sleep(5 * time.Second)
-						continue
-					}
-					// 设置地址
-					if err = c.SetAddr(); err != nil {
-						log.Printf("Set Address fail! error %v\n", err)
-						time.Sleep(5 * time.Second)
-						continue
-					}
-					// 连接成功
-					break
 				}
-			}
+				log.Println("-> reconnect server success...")
 
+				// 登录
+				if err := c.Login(); err != nil {
+					log.Printf("login fail! error %v\n", err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				log.Println("-> login success!")
+
+				// 设置地址
+				if err = c.SetAddr(); err != nil {
+					log.Printf("Set Address fail! error %v\n", err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				log.Println("-> set address success!")
+
+				// 连接成功
+				log.Println("-> connect server success...")
+				// 退出循环
+				break
+			}
 		}
 
-		// 处理数据
+		// 处理数据(优化使用协程池)
 		go c.Marshal(buf[:cnt])
 	}
 }
 
 func (c Client) Marshal(buffer []byte) {
+	// 打印数据
 	log.Println("Recv Msg:", string(buffer))
+
+	// 解析数据
+	bufData := variable.ProtoParam{}
+	err := json.Unmarshal(buffer, &bufData)
+	// 处理错误
+	if err != nil {
+		log.Println("Unmarshal error:", err)
+		c.Conn.Write([]byte(`nono`))
+		return
+	}
+
+	// 处理数据
+	pro := ProtoTransfer(bufData.Proto, bufData.Object)
+	if pro != nil {
+		// 解析数据
+		rspBody, err := pro.Analysis()
+		if err != nil {
+			log.Println("Analysis error:", err)
+		} else {
+			// 回调数据
+			callback := variable.ClientData{
+				Type: variable.CallBackType,
+				Data: variable.ProtoParam{
+					Object: rspBody,
+					ProtoCommParam: variable.ProtoCommParam{
+						Proto: bufData.Proto,
+						UUID:  bufData.UUID,
+					},
+				},
+			}
+
+			// 转换为json
+			if callbackData, err := json.Marshal(callback); err == nil {
+				// 发送数据
+				c.Conn.Write(callbackData)
+			}
+		}
+	}
 }

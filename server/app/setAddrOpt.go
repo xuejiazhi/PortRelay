@@ -2,12 +2,13 @@ package app
 
 import (
 	"PortRelay/util"
+	"PortRelay/variable"
 	"log"
 )
 
-func (s *Server) SetAddr(clientData *ClientData) {
+func (s *Server) SetAddr(clientData *variable.ClientData) {
 	backDataMap := make(map[string]interface{})
-	backDataMap["type"] = "set_addr_back"
+	backDataMap["type"] = variable.SetAddrBackType
 
 	// 解析数据
 	cliData, ok := clientData.Data.(map[string]interface{})
@@ -35,7 +36,7 @@ func (s *Server) SetAddr(clientData *ClientData) {
 	// 保存连接
 	s.Key = util.Md5(url)
 	ServerList[s.Key] = s.Conn
-	ResponseChan[s.Key] = make(map[string]chan []byte, 10000)
+	// ResponseChan = make(map[string]chan []byte, 10000)
 
 	//success
 	backDataMap["data"] = map[string]interface{}{

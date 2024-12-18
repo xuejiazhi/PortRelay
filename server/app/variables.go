@@ -30,10 +30,10 @@ client 发送数据格式
 
 *
 */
-type ClientData struct {
-	Type string      `json:"type"` // 类型
-	Data interface{} `json:"data"` // 数据
-}
+// type ClientData struct {
+// 	Type string      `json:"type"` // 类型
+// 	Data interface{} `json:"data"` // 数据
+// }
 
 type SetAddrData struct {
 	RemoteUrl string // 远程地址
@@ -51,12 +51,8 @@ var (
 	ServerList        = make(map[string]*net.TCPConn)
 	DefaultBufferSize = 1024 // 默认缓冲区大小
 
-	RspLock      sync.Mutex                                  // 锁
-	ResponseChan = make(map[string]map[string](chan []byte)) // 响应通道 string key and uuid
-
-	//	类型
-	LoginType   = "login"
-	SetAddrType = "set_addr"
+	RspLock      sync.Mutex                                      // 锁
+	ResponseChan = make(map[string]map[string]chan []byte, 1000) // 响应通道 string key and uuid
 )
 
 func NewServer() *Server {

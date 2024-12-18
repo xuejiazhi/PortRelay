@@ -1,10 +1,13 @@
 package app
 
-import "PortRelay/util"
+import (
+	"PortRelay/util"
+	"PortRelay/variable"
+)
 
-func (s *Server) Login(clientData *ClientData) {
+func (s *Server) Login(clientData *variable.ClientData) {
 	backDataMap := make(map[string]interface{})
-	backDataMap["type"] = "login_back"
+	backDataMap["type"] = variable.LoginBackType
 	// 解析数据
 	cliData, ok := clientData.Data.(map[string]interface{})
 	if !ok {

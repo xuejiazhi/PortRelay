@@ -1,6 +1,15 @@
 package app
 
-//
+var (
+	ConfigData     Config
+	HostRouterList = make(map[string]HttpRouter, 1000) // 主机路由表
+)
+
+type HttpRouter struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
 type ServerData struct {
 	Type   string      `json:"type"`
 	UUID   string      `json:"uuid"`
@@ -20,8 +29,6 @@ type Mapping struct {
 	LocalPort int    `ini:"localport"`
 	LocalIP   string `ini:"LocalIP"`
 }
-
-var ConfigData Config
 
 type Config struct {
 	Agent      Agent   `ini:"agent"`
