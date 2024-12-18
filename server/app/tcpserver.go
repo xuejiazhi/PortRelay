@@ -50,7 +50,7 @@ func (s *Server) Stop() {
 
 	// 从服务器列表中删除
 	delete(ServerList, s.Key)
-	// delete(ResponseChan, s.Key)
+	delete(ResponseChan, s.Key)
 
 	// 关闭连接
 	if s.Conn == nil {

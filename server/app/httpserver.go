@@ -31,7 +31,7 @@ func InitHttpServer() {
 	fmt.Println("http server start")
 
 	//监听端口，默认绑定端口8081
-	r.Run(":8081")
+	r.Run(fmt.Sprintf(":%d", ConfigData.Server.HttpPort))
 }
 
 func DoGet(c *gin.Context) {
@@ -61,19 +61,17 @@ func DoGet(c *gin.Context) {
 		})
 	}
 
-	//
-	ResponseChan[key] = make(map[string]chan []byte)
+	// 定义临时通道
 	ResponseChan[key][retData.UUID.(string)] = make(chan []byte)
 	// 读取数据
 	select {
-	// case clientData := <-ResponseChan[key]["retData.UUID.(string)"]:
 	case clientData := <-ResponseChan[key][retData.UUID.(string)]:
 		{
+			delete(ResponseChan[key], retData.UUID.(string))
 			c.JSON(http.StatusOK, cast.ToStringMap(string(clientData)))
 		}
 	case <-time.After(15 * time.Second):
 		{
-			fmt.Println("timeout")
 			c.JSON(http.StatusOK, map[string]interface{}{
 				"code": 500,
 				"msg":  "timeout",

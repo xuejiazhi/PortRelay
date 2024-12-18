@@ -61,9 +61,9 @@ func (c Client) Dial() {
 // 登录
 func (c Client) Login() error {
 	// 登录
-	loginData := map[string]interface{}{
-		"type": variable.LoginType,
-		"data": map[string]interface{}{
+	loginData := variable.ClientData{
+		Type: variable.LoginType,
+		Data: map[string]interface{}{
 			"secret": ConfigData.Agent.Secret,
 		},
 	}
@@ -113,9 +113,9 @@ func (c Client) Login() error {
 func (c Client) SetAddr() error {
 	log.Printf("Start registering with remote service,Name %v", ConfigData.Mapping.Name)
 	// set Address Data
-	setAddrData := map[string]interface{}{
-		"type": "set_addr",
-		"data": map[string]interface{}{
+	setAddrData := variable.ClientData{
+		Type: variable.SetAddrType,
+		Data: map[string]interface{}{
 			"RemoteUrl": ConfigData.Mapping.RemoteURL,
 			"LocalPort": ConfigData.Mapping.LocalPort,
 			"LocalIP":   ConfigData.Mapping.LocalIP,
@@ -146,7 +146,7 @@ func (c Client) SetAddr() error {
 
 	// 判断type
 	typeStr, ok := buff["type"].(string)
-	if !ok || typeStr != "set_addr_back" {
+	if !ok || typeStr != variable.SetAddrBackType {
 		return errors.New("set addr is fail")
 	}
 
@@ -237,8 +237,7 @@ func (c Client) Marshal(buffer []byte) {
 	err := json.Unmarshal(buffer, &bufData)
 	// 处理错误
 	if err != nil {
-		log.Println("Unmarshal error:", err)
-		c.Conn.Write([]byte(`nono`))
+		log.Printf("Unmarshal error->%v", err.Error())
 		return
 	}
 

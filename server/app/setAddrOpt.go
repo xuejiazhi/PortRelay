@@ -36,7 +36,7 @@ func (s *Server) SetAddr(clientData *variable.ClientData) {
 	// 保存连接
 	s.Key = util.Md5(url)
 	ServerList[s.Key] = s.Conn
-	// ResponseChan = make(map[string]chan []byte, 10000)
+	ResponseChan[s.Key] = make(map[string]chan []byte)
 
 	//success
 	backDataMap["data"] = map[string]interface{}{
