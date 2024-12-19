@@ -15,6 +15,11 @@ type ProtoHttpParam struct {
 	Object HttpObjectParam `json:"object"`
 }
 
+type ProtoPostFormParam struct {
+	ProtoCommParam
+	Object HttpPostFormObject `json:"object"`
+}
+
 type ClientData struct {
 	Type string      `json:"type"` // 类型
 	Data interface{} `json:"data"` // 数据
