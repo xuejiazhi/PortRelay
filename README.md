@@ -1,2 +1,8 @@
 # PortRelay
-准备写一个内网穿透的工具，目前只实现了HTTP内网穿透的GET方式，看能不能坚持写下去
+准备写一个内网穿透的工具，看能不能坚持写下去
+## HTTP 协议
+-  GET ✅
+-  POST ✅
+-   PUT
+-   DELETE
+-   OPTION
