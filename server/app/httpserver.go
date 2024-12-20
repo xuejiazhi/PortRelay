@@ -184,13 +184,16 @@ func getCommRetData(c *gin.Context) variable.ProtoHttpParam {
 		Object: variable.HttpObjectParam{
 			Host:        c.Request.Host,
 			URL:         c.Request.RequestURI,
-			Method:      http.MethodPost,
+			Method:      c.Request.Method,
 			Header:      c.Request.Header,
 			ContentType: c.ContentType(),
 		},
 	}
 }
 func rspReadData(c *gin.Context, key, uuid string) {
+	if _, ok := ResponseChan[key]; !ok {
+		return
+	}
 	// 定义临时通道
 	ResponseChan[key][uuid] = make(chan interface{})
 	// 读取数据

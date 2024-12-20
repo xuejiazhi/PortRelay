@@ -115,6 +115,8 @@ func (h *HttpOpt) Post() (interface{}, map[string][]string, error) {
 				return util.PostUrlEncodedForm(postUrl, body, header)
 			}
 		case variable.ContentType_JSON:
+			fallthrough
+		default:
 			{
 				//获取body
 				body := cast.ToStringMap(cast.ToStringMap(h.Object)["body"])
