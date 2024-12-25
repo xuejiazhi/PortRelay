@@ -32,9 +32,9 @@ func (c Client) Dial() {
 	// 保存连接
 	c.Conn = conn
 	// 设置超时时间
-	c.Conn.SetDeadline(time.Now().Add(60 * 60 * time.Second))
+	_ = c.Conn.SetDeadline(time.Now().Add(60 * 60 * time.Second))
 	// 设置读超时时间
-	c.Conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+	_ = c.Conn.SetReadDeadline(time.Now().Add(15 * time.Second))
 
 	//step1  登录
 	if err := c.Login(); err != nil {
@@ -56,7 +56,7 @@ func (c Client) Dial() {
 	select {}
 }
 
-// 登录
+// Login 登录
 func (c Client) Login() error {
 	// 登录
 	loginData := variable.ClientData{
@@ -70,7 +70,14 @@ func (c Client) Login() error {
 	if err != nil {
 		return err
 	}
-	c.Conn.Write(jsonByte)
+
+	//print log
+	log.Printf("Set Login String:[%v]\n", string(jsonByte))
+	//压缩
+	compressByte, _ := util.CompressString(string(jsonByte))
+	//编码
+	callBackByte, _ := util.Encode(string(compressByte))
+	_, _ = c.Conn.Write(callBackByte)
 
 	// 读取数据
 	buf := make([]byte, 1024)
@@ -86,8 +93,8 @@ func (c Client) Login() error {
 	}
 
 	// 判断type
-	typeStr, ok := buff["type"].(string)
-	if !ok || typeStr != "login_back" {
+	loginBackType := cast.ToInt(buff["type"])
+	if loginBackType != variable.LoginBackType {
 		return errors.New("login is fail")
 	}
 
@@ -107,16 +114,15 @@ func (c Client) Login() error {
 	}
 }
 
-// 设置地址
+// SetAddr 设置地址
 func (c Client) SetAddr() error {
-	log.Printf("Start registering with remote service,Name %v", ConfigData.Mapping.Name)
 	// set Address Data
 	setAddrData := variable.ClientData{
 		Type: variable.SetAddrType,
-		Data: map[string]interface{}{
-			"RemoteUrl": ConfigData.Mapping.RemoteURL,
-			"LocalPort": ConfigData.Mapping.LocalPort,
-			"LocalIP":   ConfigData.Mapping.LocalIP,
+		Data: variable.AddrObject{
+			RemoteUrl: ConfigData.Mapping.RemoteURL,
+			LocalPort: ConfigData.Mapping.LocalPort,
+			LocalIP:   ConfigData.Mapping.LocalIP,
 		},
 	}
 
@@ -126,8 +132,15 @@ func (c Client) SetAddr() error {
 		return err
 	}
 
+	//压缩
+	compressByte, _ := util.CompressString(string(jsonByte))
+	log.Printf("Set Address String:[%v]\n", string(jsonByte))
+	//将消息编码
+	callBackByte, _ := util.Encode(string(compressByte))
+	_, _ = c.Conn.Write(callBackByte)
+
 	//	发送数据
-	c.Conn.Write(jsonByte)
+	_, _ = c.Conn.Write(jsonByte)
 
 	// 读取数据
 	buf := make([]byte, 1024)
@@ -143,8 +156,8 @@ func (c Client) SetAddr() error {
 	}
 
 	// 判断type
-	typeStr, ok := buff["type"].(string)
-	if !ok || typeStr != variable.SetAddrBackType {
+	addrType := cast.ToInt(buff["type"])
+	if addrType != variable.SetAddrBackType {
 		return errors.New("set addr is fail")
 	}
 
@@ -171,11 +184,11 @@ func (c Client) Read() {
 	// 打印
 	fmt.Print(`
 ********************************************************
-*    			开始使用HTTP隧道工具           *
+*    		Start using HTTP tunneling tools           *
 ********************************************************
 `)
 	// 设置读取超时时间
-	c.Conn.SetReadDeadline(time.Now().Add(60 * 60 * time.Second))
+	_ = c.Conn.SetReadDeadline(time.Now().Add(60 * 60 * time.Second))
 	for {
 		// 接收数据
 		buf := make([]byte, 2048)
@@ -184,9 +197,7 @@ func (c Client) Read() {
 
 		if err != nil {
 			// 连接断开
-			log.Printf("read buf error %v \n ", err)
-			log.Println("-> reconnect server...")
-
+			log.Printf("Agent is DisConnect,Error Message %v \n ", err)
 			// 重新连接服务器
 			address := fmt.Sprintf("%s:%d", ConfigData.Agent.Serverip, ConfigData.Agent.Serverport)
 			for {
@@ -196,24 +207,12 @@ func (c Client) Read() {
 					time.Sleep(3 * time.Second)
 					continue
 				}
-				log.Println("-> reconnect server success...")
 
-				// 登录
-				if err := c.Login(); err != nil {
-					log.Printf("login fail! error %v\n", err)
+				// Reconnect
+				if err := c.Reconnect(address); err != nil {
 					time.Sleep(3 * time.Second)
 					continue
 				}
-				log.Println("-> login success!")
-
-				// 设置地址
-				if err = c.SetAddr(); err != nil {
-					log.Printf("Set Address fail! error %v\n", err)
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				log.Println("-> set address success!")
-
 				// 连接成功
 				log.Println("-> connect server success...")
 				// 退出循环
@@ -251,9 +250,9 @@ func (c Client) Marshal(buffer []byte) {
 			callback := variable.ClientData{
 				Type: variable.CallBackType,
 				Data: variable.ProtoParam{
-					Object: map[string]interface{}{
-						"header": rspHeader,
-						"body":   rspBody,
+					Object: variable.Object{
+						Header: rspHeader,
+						Body:   rspBody,
 					},
 					ProtoCommParam: variable.ProtoCommParam{
 						Proto: bufData.Proto,
@@ -264,10 +263,35 @@ func (c Client) Marshal(buffer []byte) {
 
 			// 转换为json
 			if callbackData, err := json.Marshal(callback); err == nil {
-				fmt.Println("CallBack String=>", string(callbackData))
+				//压缩字符串
+				compressByte, _ := util.CompressString(string(callbackData))
+				//消息编码
+				callBackByte, _ := util.Encode(string(compressByte))
+				fmt.Println("CallBack Encode String=>", string(callBackByte))
 				// 发送数据
-				c.Conn.Write(callbackData)
+				_, _ = c.Conn.Write(callBackByte)
 			}
 		}
 	}
+}
+
+// Reconnect 重连
+func (c Client) Reconnect(address string) error {
+	//定义错误
+	var err error
+
+	// 登录
+	if err := c.Login(); err != nil {
+		log.Printf("login fail! error %v\n", err)
+		return err
+	}
+
+	// 设置地址
+	if err = c.SetAddr(); err != nil {
+		log.Printf("Set Address fail! error %v\n", err)
+		return err
+	}
+
+	//return
+	return nil
 }

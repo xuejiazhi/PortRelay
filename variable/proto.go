@@ -10,6 +10,20 @@ type ProtoParam struct {
 	Object interface{} `json:"object"`
 }
 
+type Object struct {
+	Header map[string][]string `json:"header"`
+	Body   []byte              `json:"body"`
+}
+
+type AddrObject struct {
+	RemoteUrl string `json:"RemoteUrl"`
+	LocalPort int    `json:"LocalPort"`
+	LocalIP   string `json:"LocalIP"`
+}
+
+type AgentObject struct {
+}
+
 type ProtoHttpParam struct {
 	ProtoCommParam
 	Object HttpObjectParam `json:"object"`
@@ -21,6 +35,6 @@ type ProtoPostFormParam struct {
 }
 
 type ClientData struct {
-	Type string      `json:"type"` // 类型
+	Type int         `json:"type"` // 类型
 	Data interface{} `json:"data"` // 数据
 }

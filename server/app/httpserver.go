@@ -3,6 +3,7 @@ package app
 import (
 	"PortRelay/util"
 	"PortRelay/variable"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -215,7 +216,8 @@ func rspReadData(c *gin.Context, key, uuid string) {
 
 			// 存在body
 			if body, ok := cliMapData["body"]; ok {
-				c.String(http.StatusOK, cast.ToString(body))
+				decoded, _ := base64.StdEncoding.DecodeString(body.(string))
+				c.String(http.StatusOK, string(decoded))
 			} else {
 				//转发失败的情况
 				c.String(http.StatusOK, "Port Forwarding failed!")

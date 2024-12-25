@@ -18,7 +18,7 @@ type HttpOpt struct {
 	Header map[string][]string `json:"header"`
 }
 
-func (h *HttpOpt) Analysis() (interface{}, map[string][]string, error) {
+func (h *HttpOpt) Analysis() ([]byte, map[string][]string, error) {
 	if h.Object != nil {
 		// 解析数据
 		objectMap := cast.ToStringMap(h.Object)
@@ -56,15 +56,21 @@ func (h *HttpOpt) Analysis() (interface{}, map[string][]string, error) {
 	return nil, nil, errors.New("http method is not support")
 }
 
-func (h *HttpOpt) Get() (interface{}, map[string][]string, error) {
+func (h *HttpOpt) Get() ([]byte, map[string][]string, error) {
 	// 拼接url
 	u := HostRouterList[util.Md5(h.Host)]
+	var url string
 	// 拼接url
-	url := fmt.Sprintf("http://%s:%d%s", u.Host, u.Port, h.Url)
+	if u.Port == 80 && h.Url == "/" {
+		url = fmt.Sprintf("http://%s", u.Host)
+	} else {
+		url = fmt.Sprintf("http://%s:%d%s", u.Host, u.Port, h.Url)
+	}
+
 	// 打印url
 	log.Printf("Do Get url is %s", url)
 	// 发送请求
-	return util.Request(url, http.MethodGet, "", func() map[string]string {
+	body, header, err := util.Request(url, http.MethodGet, "", func() map[string]string {
 		var x = make(map[string]string)
 		if len(h.Header) > 0 {
 			for k, v := range h.Header {
@@ -75,9 +81,14 @@ func (h *HttpOpt) Get() (interface{}, map[string][]string, error) {
 		}
 		return x
 	}())
+	//将数据进行压缩
+	bodyByte, _ := util.CompressString(body)
+
+	// 返回数据
+	return bodyByte, header, err
 }
 
-func (h *HttpOpt) Post() (interface{}, map[string][]string, error) {
+func (h *HttpOpt) Post() ([]byte, map[string][]string, error) {
 	// 拼接url
 	u := HostRouterList[util.Md5(h.Host)]
 	// 拼接url
@@ -102,19 +113,19 @@ func (h *HttpOpt) Post() (interface{}, map[string][]string, error) {
 	contentType, ok := h.Object.(map[string]interface{})["content_type"].(string)
 	if ok {
 		switch contentType {
-		case variable.ContentType_Multipart_FormData:
+		case variable.ContentTypeMultipartFormData:
 			{
 				// 解析body
 				body := cast.ToStringMap(cast.ToStringMap(h.Object)["body"])
 				return util.PostMultiForm(postUrl, body, header)
 			}
-		case variable.ContentType_Application_X_WWW_Form_Urlencoded:
+		case variable.ContentTypeApplicationXWWWFormUrlencoded:
 			{
 				// 解析body
 				body := cast.ToStringMapStringSlice(cast.ToStringMap(h.Object)["body"])
 				return util.PostUrlEncodedForm(postUrl, body, header)
 			}
-		case variable.ContentType_JSON:
+		case variable.ContentTypeJson:
 			fallthrough
 		default:
 			{
@@ -125,7 +136,7 @@ func (h *HttpOpt) Post() (interface{}, map[string][]string, error) {
 
 		}
 	}
-	return "", nil, errors.New("content_type is not support")
+	return nil, nil, errors.New("content_type is not support")
 }
 
 func (h *HttpOpt) Put() {

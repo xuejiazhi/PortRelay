@@ -1,7 +1,9 @@
 package app
 
 import (
+	"PortRelay/util"
 	"PortRelay/variable"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,16 +63,22 @@ func (s *Server) Stop() {
 
 func (s *Server) Read() {
 	// 读取数据
-	buffer := make([]byte, DefaultBufferSize)
 	for {
-		cnt, err := s.Conn.Read(buffer)
+		//读取数据
+		reader := bufio.NewReader(s.Conn)
+		//解码消息
+		msg, err := util.Decode(reader)
+		//解压消息
+		msgDec, _ := util.DecompressString(msg)
+		//print log
+		log.Printf("Decompress String is [%v]\n", msgDec)
 		// 读取失败
 		if err != nil {
-			log.Printf("Read failed: %v", err)
+			log.Printf("Read failed: %v", msgDec)
 			return
 		}
 		// 路由 (todo: 优化使用协程池)
-		go s.Router(buffer[:cnt])
+		go s.Router(util.ZeroCopyByte(msgDec))
 	}
 }
 

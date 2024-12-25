@@ -1,6 +1,6 @@
 package variable
 
-// 定义http Object传输参数
+// HttpObjectParam 定义http Object传输参数
 type HttpObjectParam struct {
 	Host        string              `json:"host"`
 	URL         string              `json:"url"`
@@ -10,7 +10,7 @@ type HttpObjectParam struct {
 	Body        interface{}         `json:"body"`
 }
 
-// 定义http PostForm传输参数
+// HttpPostFormObject 定义http PostForm传输参数
 type HttpPostFormObject struct {
 	HttpObjectParam `json:"param"`
 	ContentType     string      `json:"content_type"`
@@ -18,28 +18,27 @@ type HttpPostFormObject struct {
 }
 
 var (
-	//	类型
-	LoginType       = "login"
-	LoginBackType   = "login_back"
-	SetAddrType     = "set_addr"
-	SetAddrBackType = "set_addr_back"
-	CallBackType    = "callback"
+	LoginType       = 0x01
+	LoginBackType   = 0x02
+	SetAddrType     = 0x03
+	SetAddrBackType = 0x04
+	CallBackType    = 0x05
 )
 
 const (
-	ContentType_JSON                              = "application/json"
-	ContentType_HTML                              = "text/html"
-	ContentType_XML                               = "application/xml"
-	ContentType_XML2                              = "text/xml"
-	ContentType_Plain                             = "text/plain"
-	ContentType_Application_X_WWW_Form_Urlencoded = "application/x-www-form-urlencoded"
-	ContentType_Multipart_FormData                = "multipart/form-data"
-	ContentType_PROTOBUF                          = "application/x-protobuf"
-	ContentType_MSGPACK                           = "application/x-msgpack"
-	ContentType_MSGPACK2                          = "application/msgpack"
-	ContentType_YAML                              = "application/x-yaml"
-	ContentType_YAML2                             = "application/yaml"
-	ContentType_TOML                              = "application/toml"
+	ContentTypeJson                          = "application/json"
+	ContentTypeHTML                          = "text/html"
+	ContentTypeXML                           = "application/xml"
+	ContentTypeXML2                          = "text/xml"
+	ContentTypePlain                         = "text/plain"
+	ContentTypeApplicationXWWWFormUrlencoded = "application/x-www-form-urlencoded"
+	ContentTypeMultipartFormData             = "multipart/form-data"
+	ContentTypePROTOBUF                      = "application/x-protobuf"
+	ContentTypeMSGPACK                       = "application/x-msgpack"
+	ContentTypeMSGPACK2                      = "application/msgpack"
+	ContentTypeYAML                          = "application/x-yaml"
+	ContentTypeYAML2                         = "application/yaml"
+	ContentTypeTOML                          = "application/toml"
 )
 
 var NotFound = map[string]interface{}{

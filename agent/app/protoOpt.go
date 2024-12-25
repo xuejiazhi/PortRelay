@@ -17,5 +17,5 @@ func ProtoTransfer(proto string, data interface{}) ProtoInterface {
 }
 
 type ProtoInterface interface {
-	Analysis() (interface{}, map[string][]string, error)
+	Analysis() ([]byte, map[string][]string, error)
 }

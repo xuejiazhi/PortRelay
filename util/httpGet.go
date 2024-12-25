@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-func Request(url string, method string, data string, header map[string]string) (interface{}, map[string][]string, error) {
+func Request(url string, method string, data string, header map[string]string) (string, map[string][]string, error) {
 	httpClient := http.Client{}
 	// 发起请求
 	return requestDo(httpClient, url, method, data, header)
 }
 
-func RequestTLS(url string, method string, data string, header map[string]string) (interface{}, map[string][]string, error) {
+func RequestTLS(url string, method string, data string, header map[string]string) (string, map[string][]string, error) {
 	// 跳过证书验证
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -23,10 +23,10 @@ func RequestTLS(url string, method string, data string, header map[string]string
 	return requestDo(httpClient, url, method, data, header)
 }
 
-func requestDo(httpClient http.Client, url string, method string, data string, header map[string]string) (interface{}, map[string][]string, error) {
+func requestDo(httpClient http.Client, url string, method string, data string, header map[string]string) (string, map[string][]string, error) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(data)))
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	for h, v := range header {
@@ -37,16 +37,16 @@ func requestDo(httpClient http.Client, url string, method string, data string, h
 	response, err := httpClient.Do(req)
 
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	} else if response != nil {
 		defer response.Body.Close()
 		r_body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			return nil, nil, err
+			return "", nil, err
 		} else {
 			return string(r_body), response.Header, nil
 		}
 	} else {
-		return nil, nil, nil
+		return "", nil, nil
 	}
 }

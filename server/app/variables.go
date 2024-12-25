@@ -49,7 +49,7 @@ type LoginData struct {
 var (
 	// 服务器
 	ServerList        = make(map[string]*net.TCPConn)
-	DefaultBufferSize = 1024 // 默认缓冲区大小
+	DefaultBufferSize = 1024 * 10 // 默认缓冲区大小
 
 	RspLock      sync.Mutex                                           // 锁
 	ResponseChan = make(map[string]map[string]chan interface{}, 1000) // 响应通道 string key and uuid

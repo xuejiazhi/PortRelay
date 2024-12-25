@@ -2,7 +2,10 @@ module PortRelay
 
 go 1.22
 
-require github.com/gin-gonic/gin v1.10.0
+require (
+	github.com/gin-gonic/gin v1.10.0
+	github.com/golang/snappy v0.0.4
+)
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect

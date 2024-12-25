@@ -1,6 +1,7 @@
 package test
 
 import (
+	"PortRelay/util"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -84,4 +85,22 @@ func Test_Xxx(t *testing.T) {
 	} else {
 		fmt.Println("Begin or end marker not found")
 	}
+}
+
+func Test_CompressString(t *testing.T) {
+	// 示例字符串
+	str := "<html>Hello, World!</html>"
+
+	// 压缩字符串
+	compressedStr, err := util.CompressString(str)
+	if err != nil {
+		fmt.Println("Error compressing string:", err)
+		return
+	}
+
+	xxx := string(compressedStr)
+	fmt.Println(xxx)
+
+	yyy, err := util.DecompressString([]byte(xxx))
+	fmt.Println(yyy)
 }

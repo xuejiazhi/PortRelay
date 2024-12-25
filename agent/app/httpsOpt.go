@@ -4,6 +4,6 @@ type HttpsOpt struct {
 	Object interface{} `json:"object"`
 }
 
-func (h *HttpsOpt) Analysis() (interface{}, map[string][]string, error) {
-	return h.Object, nil, nil
+func (h *HttpsOpt) Analysis() ([]byte, map[string][]string, error) {
+	return nil, nil, nil
 }
