@@ -203,18 +203,18 @@ func (c Client) Read() {
 			for {
 				// 建立连接
 				if c.Conn, err = net.Dial(ConfigData.Agent.Network, address); err != nil {
-					log.Printf("reconnect server err,error %v\n", err)
+					log.Printf("ReConnect Server Error %v\n", err)
 					time.Sleep(3 * time.Second)
 					continue
 				}
 
 				// Reconnect
-				if err := c.Reconnect(address); err != nil {
+				if err := c.Reconnect(); err != nil {
 					time.Sleep(3 * time.Second)
 					continue
 				}
 				// 连接成功
-				log.Println("-> connect server success...")
+				log.Println("-> Connect Server Success...")
 				// 退出循环
 				break
 			}
@@ -276,7 +276,7 @@ func (c Client) Marshal(buffer []byte) {
 }
 
 // Reconnect 重连
-func (c Client) Reconnect(address string) error {
+func (c Client) Reconnect() error {
 	//定义错误
 	var err error
 
